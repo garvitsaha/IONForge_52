@@ -195,6 +195,11 @@ Frontend zip is also been provided above
 
 wowki simulation is also provided above 
 
+YOUTUBE LINK
+--> https://youtu.be/xBzdfSJjHu8
+VERCEL LINK
+
+--> https://ionforgefalldetectiondashboard-3-8fw21zw7w-ionforge.vercel.app?_vercel_share=FqJLpHWjHwboFaokRq7TQxjNWsYtpkBF
 
 ---
 
