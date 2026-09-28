@@ -188,13 +188,12 @@ The final hardware version is intended to integrate the physical components into
 
 ## 📦 Complete Project Download
 
-### Full Project ZIP
 
-[⬇️ Download Complete IonForge Project](./
+Already provided above
 
-### Backend ZIP
+Frontend zip is also been provided above 
 
-[⬇️ Download Backend Project]
+wowki simulation is also provided above 
 
 
 ---
