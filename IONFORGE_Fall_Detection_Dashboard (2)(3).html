@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IONFORGE — Fall Detection & Monitoring</title>
+<meta name="description" content="IONFORGE Fall Detection Armband monitoring and caregiver alert dashboard">
+<style>
+:root{
+  --bg:#06111f; --panel:#0b1a2c; --panel2:#0d2137; --line:#173551;
+  --text:#edf7ff; --muted:#88a3bb; --cyan:#27d9ef; --blue:#4b9dff;
+  --green:#32e0a1; --red:#ff4d5d; --amber:#ffbf55; --purple:#a97bff;
+  --shadow:0 20px 55px rgba(0,0,0,.28); --radius:18px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:radial-gradient(circle at 75% 0%,#102b46 0,#06111f 38%,#040b14 100%);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,input,select{font:inherit}
+button{cursor:pointer}
+.app{display:flex;min-height:100vh}
+.sidebar{width:250px;background:rgba(5,17,30,.96);border-right:1px solid var(--line);padding:22px 16px;position:fixed;left:0;top:0;bottom:0;z-index:20}
+.brand{display:flex;align-items:center;gap:12px;padding:4px 10px 26px;border-bottom:1px solid var(--line)}
+.brandmark{width:42px;height:42px;border:2px solid var(--cyan);border-radius:13px;display:grid;place-items:center;color:var(--cyan);font-size:23px;box-shadow:0 0 24px rgba(39,217,239,.18)}
+.brand strong{font-size:22px;letter-spacing:1.5px}.brand small{display:block;color:var(--muted);font-size:10px;margin-top:2px}
+.nav{padding-top:20px}.nav button{width:100%;border:0;background:transparent;color:#9eb4c8;text-align:left;padding:13px 14px;border-radius:12px;margin:3px 0;display:flex;align-items:center;gap:12px;font-weight:600}
+.nav button:hover,.nav button.active{background:linear-gradient(90deg,rgba(39,217,239,.17),rgba(39,217,239,.04));color:#fff}.nav .ico{width:23px;text-align:center;font-size:18px}
+.sidebar-footer{position:absolute;left:16px;right:16px;bottom:18px;padding:14px;border:1px solid var(--line);border-radius:14px;background:#081727;color:var(--muted);font-size:12px}
+.sidebar-footer b{display:block;color:#fff;margin-bottom:5px}.sidebar-footer span{color:var(--cyan)}
+.main{margin-left:250px;width:calc(100% - 250px)}
+.topbar{height:74px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 28px;background:rgba(5,16,28,.68);backdrop-filter:blur(16px);position:sticky;top:0;z-index:15}
+.top-left{display:flex;gap:24px;align-items:center}.system{display:flex;gap:8px;align-items:center;color:#cde2f1;font-size:13px}.dot{width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 13px var(--green)}.wifi{color:var(--cyan);font-size:19px}
+.top-right{display:flex;align-items:center;gap:18px}.bell{position:relative;font-size:20px}.badge{position:absolute;right:-8px;top:-8px;background:var(--red);font-size:9px;border-radius:20px;padding:3px 5px}
+.profile{display:flex;gap:10px;align-items:center}.avatar{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#5f7fa0,#263d55);font-size:17px}.profile small{display:block;color:var(--muted);font-size:10px}
+.content{padding:25px 28px 35px;max-width:1700px;margin:auto}.page-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}.page-title h1{margin:0;font-size:25px}.page-title p{margin:4px 0 0;color:var(--muted);font-size:13px}
+.actions{display:flex;gap:9px}.btn{border:1px solid var(--line);background:#0b1b2c;color:#d9edf9;border-radius:10px;padding:9px 13px;font-weight:650}.btn:hover{border-color:#2a5977}.btn.primary{background:linear-gradient(135deg,#13bfd4,#287be8);border:0;color:#fff}.btn.danger{background:linear-gradient(135deg,#f63c4e,#b91f37);border:0}.btn.green{background:rgba(50,224,161,.12);border-color:rgba(50,224,161,.35);color:var(--green)}
+.grid{display:grid;gap:14px}.stats{grid-template-columns:repeat(4,1fr)}.two{grid-template-columns:1.55fr 1fr}.rightgrid{grid-template-columns:1fr}.bottom{grid-template-columns:1.55fr 1fr}
+.card{background:linear-gradient(180deg,rgba(13,33,55,.95),rgba(7,22,37,.95));border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}.card-head{padding:16px 17px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}.card-head h2,.card-head h3{margin:0;font-size:15px}.card-head a{color:var(--cyan);font-size:12px;cursor:pointer}.card-body{padding:17px}
+.stat{padding:17px;display:flex;gap:14px;align-items:center}.stat-icon{width:47px;height:47px;border-radius:14px;display:grid;place-items:center;font-size:23px;background:rgba(39,217,239,.11);border:1px solid rgba(39,217,239,.2);color:var(--cyan)}.stat-icon.green{color:var(--green);background:rgba(50,224,161,.09);border-color:rgba(50,224,161,.18)}.stat-icon.blue{color:#69aaff;background:rgba(75,157,255,.1)}.stat-icon.purple{color:var(--purple);background:rgba(169,123,255,.1)}
+.label{color:var(--muted);font-size:11px}.value{font-size:16px;font-weight:750;margin-top:3px}.sub{color:var(--muted);font-size:10px;margin-top:4px}
+.status{color:var(--green)}.offline{color:var(--amber)}.danger-text{color:var(--red)}
+.alert{border-color:rgba(255,77,93,.35);box-shadow:0 0 35px rgba(255,77,93,.07)}.alert-head{background:linear-gradient(90deg,rgba(255,77,93,.18),rgba(255,77,93,.03));padding:17px;display:flex;align-items:center;gap:12px}.alert-symbol{width:42px;height:42px;border-radius:13px;background:rgba(255,77,93,.2);color:#ff7783;display:grid;place-items:center;font-size:22px}.alert-title{font-size:21px;font-weight:850;letter-spacing:.4px;color:#ff6571}.live{font-size:10px;background:rgba(255,77,93,.17);padding:5px 8px;border-radius:8px;color:#ff8b95;margin-left:auto}
+.alert-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:16px}.kv{display:flex;gap:10px;align-items:flex-start}.kv .kico{color:#8db4d0;font-size:18px;width:25px}.kv b{display:block;font-size:12px}.kv span{color:#b4c9d9;font-size:12px}.delivery{display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid var(--line);padding:13px 16px}.delivery>div{padding:0 13px;border-right:1px solid var(--line)}.delivery>div:last-child{border:0}.delivery b{font-size:11px}.delivery span{display:block;margin-top:4px;font-size:11px}.tick{color:var(--green)}.pending{color:var(--red)}
+.map{height:330px;position:relative;overflow:hidden;background:
+linear-gradient(25deg,transparent 0 31%,rgba(71,130,144,.20) 32% 33%,transparent 34% 58%,rgba(71,130,144,.18) 59% 60%,transparent 61%),
+linear-gradient(160deg,transparent 0 24%,rgba(51,119,136,.18) 25% 26%,transparent 27% 67%,rgba(51,119,136,.18) 68% 69%,transparent 70%),
+radial-gradient(circle at 30% 60%,rgba(22,91,91,.32),transparent 23%),#102a35}
+.map:before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(102,180,187,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(102,180,187,.08) 1px,transparent 1px);background-size:46px 46px;opacity:.5}
+.road{position:absolute;height:3px;background:rgba(181,211,211,.2);transform:rotate(-28deg);width:115%;left:-10%;top:48%}.road.two{transform:rotate(18deg);top:64%;opacity:.7}.road.three{transform:rotate(76deg);top:30%;opacity:.5}
+.map-label{position:absolute;color:#6eabb5;font-size:11px}.pin{position:absolute;left:52%;top:48%;transform:translate(-50%,-100%);z-index:3}.pin-core{width:31px;height:39px;background:var(--red);border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 0 0 10px rgba(255,77,93,.12),0 0 30px rgba(255,77,93,.35)}.pin-core:after{content:"";position:absolute;width:10px;height:10px;border-radius:50%;background:#fff;left:10px;top:10px}.map-pop{position:absolute;left:52%;top:29%;transform:translateX(-50%);background:#0a1725;border:1px solid var(--red);padding:9px 12px;border-radius:9px;font-size:11px;z-index:4;white-space:nowrap}.map-pop b{color:#ff7380;display:block}.map-controls{position:absolute;right:12px;bottom:12px;display:grid;gap:5px;z-index:5}.map-controls button{width:34px;height:34px;border:1px solid #31536a;background:#081827;color:#fff;border-radius:8px}.map-top{position:absolute;left:12px;right:12px;top:12px;z-index:5;display:flex;justify-content:space-between}.tag{background:rgba(4,15,25,.83);border:1px solid #294c62;padding:7px 9px;border-radius:8px;font-size:10px}.coords{color:#fff}
+.recent .event-badge{display:flex;align-items:center;gap:10px;background:rgba(255,77,93,.1);border:1px solid rgba(255,77,93,.18);padding:11px;border-radius:12px}.event-badge strong{color:#ff6470}.mini-kv{margin-top:14px;display:grid;gap:11px}.mini-row{display:flex;justify-content:space-between;font-size:11px}.mini-row span{color:var(--muted)}.mini-row b{font-weight:650}
+.reminder{width:100%;margin-top:15px;border:0;border-radius:10px;padding:11px;background:linear-gradient(135deg,#f14856,#b7273b);color:#fff;font-weight:750}
+.offline-box{border:1px solid rgba(255,191,85,.22);background:rgba(255,191,85,.045);border-radius:12px;padding:13px}.offline-title{display:flex;align-items:center;gap:9px}.offline-title b{font-size:14px}.offline-count{margin-left:auto;background:rgba(255,191,85,.15);color:var(--amber);padding:4px 8px;border-radius:20px;font-size:10px}.offline-box p{font-size:11px;color:#9eb5c7;line-height:1.55;margin:10px 0}.queue-item{display:flex;justify-content:space-between;align-items:center;padding:9px 10px;border:1px solid #1c3b53;border-radius:9px;margin-top:7px;background:#081827;font-size:10px}.queue-item .qdot{width:8px;height:8px;border-radius:50%;background:var(--red);display:inline-block;margin-right:7px}
+.table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse;min-width:650px}.table th{color:#7995ac;font-size:10px;text-transform:uppercase;letter-spacing:.5px;text-align:left;padding:12px 11px;border-bottom:1px solid var(--line)}.table td{padding:12px 11px;border-bottom:1px solid rgba(23,53,81,.75);font-size:11px;color:#c3d5e2}.table tr:hover{background:rgba(39,217,239,.035)}.event-dot{width:9px;height:9px;border-radius:50%;display:inline-block;background:var(--green);margin-right:7px}.event-dot.red{background:var(--red)}.pill{font-size:9px;border-radius:20px;padding:4px 7px;display:inline-block}.pill.ok{color:var(--green);background:rgba(50,224,161,.1)}.pill.no{color:var(--red);background:rgba(255,77,93,.1)}
+.log{display:grid}.log-item{display:flex;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}.log-item:last-child{border:0}.log-icon{width:29px;height:29px;border-radius:50%;display:grid;place-items:center;background:rgba(39,217,239,.11);color:var(--cyan);flex:none}.log-icon.red{background:rgba(255,77,93,.11);color:var(--red)}.log-icon.green{background:rgba(50,224,161,.1);color:var(--green)}.log-item b{font-size:11px}.log-item small{display:block;color:var(--muted);font-size:9px;margin-top:3px}
+.section{display:none}.section.active{display:block}
+.device-panel,.settings-panel{display:grid;grid-template-columns:1.2fr .8fr;gap:14px}.device-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--line)}.device-row:last-child{border:0}.device-row span{color:var(--muted);font-size:12px}.device-row b{font-size:12px}.form-row{margin-bottom:13px}.form-row label{display:block;font-size:11px;color:var(--muted);margin-bottom:6px}.input{width:100%;padding:11px 12px;background:#071625;border:1px solid #1b3b54;color:#fff;border-radius:9px;outline:none}.input:focus{border-color:var(--cyan)}
+.toast{position:fixed;right:22px;bottom:22px;background:#0b1d2d;border:1px solid #28516d;padding:12px 15px;border-radius:11px;box-shadow:var(--shadow);z-index:99;transform:translateY(20px);opacity:0;pointer-events:none;transition:.25s;font-size:12px}.toast.show{transform:none;opacity:1}
+.modal-back{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100;align-items:center;justify-content:center;padding:20px}.modal-back.show{display:flex}.modal{width:min(700px,100%);max-height:90vh;overflow:auto;background:#091a2b;border:1px solid #23465f;border-radius:18px;box-shadow:0 30px 90px #000}.modal-head{padding:17px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between}.modal-head h3{margin:0}.close{background:transparent;border:0;color:#9eb4c8;font-size:20px}.modal-body{padding:18px}.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.detail-box{padding:12px;background:#071625;border:1px solid var(--line);border-radius:10px}.detail-box small{display:block;color:var(--muted);font-size:10px;margin-bottom:5px}.detail-box b{font-size:12px}
+@media(max-width:1100px){.stats{grid-template-columns:repeat(2,1fr)}.two,.bottom,.device-panel,.settings-panel{grid-template-columns:1fr}.sidebar{width:76px}.brand{justify-content:center}.brand div:last-child,.nav button span:not(.ico),.sidebar-footer{display:none}.main{margin-left:76px;width:calc(100% - 76px)}.nav button{justify-content:center}}
+@media(max-width:700px){.topbar{padding:0 14px}.top-left .system:nth-child(2),.profile div:last-child{display:none}.content{padding:17px 13px}.stats{grid-template-columns:1fr 1fr}.alert-grid{grid-template-columns:1fr}.delivery{grid-template-columns:1fr}.delivery>div{border-right:0;border-bottom:1px solid var(--line);padding:9px 0}.map{height:280px}.page-title{align-items:flex-start;gap:10px}.actions .btn:not(.primary){display:none}}
+
+/* ===== AUTH ===== */
+html.authed #auth{display:none}
+html:not(.authed) .app{display:none}
+.toast{z-index:400}
+#auth{position:fixed;inset:0;z-index:200;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(400px,.9fr);background:radial-gradient(circle at 20% 0%,#102b46 0,#06111f 45%,#040b14 100%);overflow:auto}
+.auth-hero{padding:44px 56px;display:flex;flex-direction:column;justify-content:space-between;gap:40px;border-right:1px solid var(--line)}
+.auth-brand{display:flex;align-items:center;gap:14px}
+.auth-brand .brandmark{width:52px;height:52px;border-radius:16px}
+.auth-brand .brandmark svg,.brand .brandmark svg{width:56%;height:56%;fill:currentColor}
+.auth-brand strong{font-size:28px;letter-spacing:2.5px;display:block;line-height:1}
+.auth-brand small{display:block;color:var(--muted);font-size:12px;margin-top:6px}
+.auth-hero h1{font-size:clamp(32px,4vw,52px);line-height:1.08;margin:0 0 16px;max-width:14ch;letter-spacing:-.5px}
+.auth-hero p{color:#a5bbcc;font-size:16px;line-height:1.6;max-width:44ch;margin:0}
+.trace{margin-top:34px;max-width:640px;border:1px solid var(--line);border-radius:var(--radius);background:rgba(7,22,37,.6);padding:14px 16px 10px}
+.trace svg{width:100%;height:auto;display:block}
+.trace-line{fill:none;stroke:var(--cyan);stroke-width:2;stroke-linejoin:round;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;animation:trace-draw 3.2s ease-out .3s forwards}
+.trace-hit{opacity:0;animation:trace-hit .4s ease-out 2.2s forwards}
+@keyframes trace-draw{to{stroke-dashoffset:0}}
+@keyframes trace-hit{to{opacity:1}}
+.trace-cap{display:flex;justify-content:space-between;gap:12px;color:var(--muted);font-size:11px;margin-top:6px}
+.trace-cap b{color:#ff8b95;font-weight:650}
+.auth-foot{color:var(--muted);font-size:13px}
+.auth-panel{display:grid;place-items:center;padding:32px 24px}
+.auth-card{width:min(420px,100%)}
+.tabs{display:grid;grid-template-columns:1fr 1fr;background:#071625;border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:26px}
+.tabs button{border:0;background:transparent;color:var(--muted);padding:10px;border-radius:9px;font-weight:700}
+.tabs button[aria-selected=true]{background:linear-gradient(90deg,rgba(39,217,239,.17),rgba(39,217,239,.06));color:#fff;box-shadow:inset 0 0 0 1px rgba(39,217,239,.3)}
+.auth-card h2{margin:0 0 6px;font-size:24px}
+.auth-card .lead{color:var(--muted);font-size:13px;margin:0 0 22px;line-height:1.5}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;color:#a9c0d3;margin-bottom:6px;font-weight:600}
+.pw{position:relative}.pw .input{padding-right:64px}
+.pw button{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:transparent;border:0;color:var(--cyan);font-size:12px;font-weight:650;padding:6px 8px;border-radius:6px}
+.hint{color:var(--muted);font-size:11px;margin-top:5px}
+.opts{display:flex;justify-content:space-between;align-items:center;margin:2px 0 18px;font-size:12px;gap:10px}
+.check{display:flex;align-items:center;gap:8px;color:#b4c9d9;cursor:pointer}
+.check input{accent-color:var(--cyan);width:16px;height:16px;margin:0}
+.linkbtn{background:none;border:0;color:var(--cyan);padding:0;font-size:12px;font-weight:650}
+.linkbtn:hover{text-decoration:underline}
+.btn.wide{width:100%;padding:13px;font-size:14px;border-radius:11px}
+.msg{min-height:18px;font-size:12px;margin:0 0 12px;color:#ff7783;line-height:1.4}
+.msg.ok{color:var(--green)}
+.notice{border:1px solid rgba(255,191,85,.25);background:rgba(255,191,85,.06);color:#ffd28a;border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.5;margin-bottom:16px}
+.notice b{letter-spacing:2px;color:#fff}
+.divider{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:12px;margin:22px 0}
+.divider:before,.divider:after{content:"";flex:1;height:1px;background:var(--line)}
+.alt{display:grid;gap:10px}
+.alt .btn{display:flex;align-items:center;justify-content:center;gap:10px;padding:12px;border-radius:11px;width:100%}
+.gbtn{background:#131314;border-color:#3c4a58;color:#e3e3e3}
+.gbtn:hover{border-color:#6b7f90}
+.back{margin-bottom:18px}
+#auth :focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+#auth .input:focus-visible{outline-offset:0}
+@media(max-width:900px){
+  #auth{grid-template-columns:1fr;align-content:start}
+  .auth-hero{padding:22px 24px;border-right:0;border-bottom:1px solid var(--line);gap:0}
+  .auth-hero h1,.auth-hero p,.trace,.auth-foot{display:none}
+  .auth-panel{align-items:start;padding:28px 20px 40px}
+}
+@media(max-width:700px){.profile>div:nth-child(2){display:none}}
+@media(prefers-reduced-motion:reduce){.trace-line{animation:none;stroke-dashoffset:0}.trace-hit{animation:none;opacity:1}}
+</style>
+<script>try{if(localStorage.getItem("ionforge.session")||sessionStorage.getItem("ionforge.session"))document.documentElement.classList.add("authed")}catch(e){}</script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="if-bolt" viewBox="0 0 48 48"><path d="M28 3 10 27h11l-3 18 20-26H27z"/></symbol></svg>
+
+<div id="auth">
+  <section class="auth-hero" aria-label="IONFORGE">
+    <div class="auth-brand"><div class="brandmark"><svg aria-hidden="true"><use href="#if-bolt"/></svg></div><div><strong>IONFORGE</strong><small>Safety Beyond Limits</small></div></div>
+    <div>
+      <h1>Every fall, reported in seconds.</h1>
+      <p>IONFORGE tells your caregiver where and when a fall happened, even if the armband has no Wi-Fi at that moment.</p>
+      <div class="trace" role="img" aria-label="Accelerometer trace showing a sharp spike when a fall is detected">
+        <svg viewBox="0 0 640 150"><path class="trace-line" pathLength="1" d="M0 90 L30 86 L60 94 L90 84 L120 96 L150 85 L180 95 L210 84 L240 94 L270 86 L300 92 L330 88 L360 90 L380 70 L392 14 L404 140 L416 40 L428 118 L440 74 L456 104 L472 84 L490 96 L520 89 L560 91 L640 90"/><g class="trace-hit"><circle cx="392" cy="14" r="10" fill="rgba(255,77,93,.2)"/><circle cx="392" cy="14" r="4.5" fill="#ff4d5d"/></g></svg>
+        <div class="trace-cap"><span>Armband accelerometer</span><b>Fall detected · caregiver alerted</b></div>
+      </div>
+    </div>
+    <div class="auth-foot">Your loved ones are never alone.</div>
+  </section>
+
+  <section class="auth-panel">
+    <div class="auth-card">
+      <div class="tabs" id="tabs" role="tablist" aria-label="Account">
+        <button type="button" role="tab" id="tabIn" aria-selected="true">Sign in</button>
+        <button type="button" role="tab" id="tabUp" aria-selected="false">Sign up</button>
+      </div>
+
+      <form id="formIn" novalidate>
+        <h2>Welcome back</h2><p class="lead">Sign in to monitor your armband and caregiver alerts.</p>
+        <div class="field"><label for="inEmail">Email</label><input class="input" id="inEmail" type="email" autocomplete="email" placeholder="you@example.com"></div>
+        <div class="field"><label for="inPw">Password</label><div class="pw"><input class="input" id="inPw" type="password" autocomplete="current-password"><button type="button" data-toggle="#inPw" aria-pressed="false">Show</button></div></div>
+        <div class="opts"><label class="check"><input type="checkbox" id="inKeep" checked> Keep me signed in</label><button type="button" class="linkbtn" id="toForgot">Forgot password?</button></div>
+        <p class="msg" id="msgIn" role="alert"></p>
+        <button class="btn primary wide" type="submit">Sign in</button>
+      </form>
+
+      <form id="formUp" novalidate hidden>
+        <h2>Create your account</h2><p class="lead">Set up fall alerts for your family in a few minutes.</p>
+        <div class="field"><label for="upName">Full name</label><input class="input" id="upName" type="text" autocomplete="name" placeholder="Sushmita Das"></div>
+        <div class="field"><label for="upEmail">Email</label><input class="input" id="upEmail" type="email" autocomplete="email" placeholder="you@example.com"></div>
+        <div class="field"><label for="upPw">Password</label><div class="pw"><input class="input" id="upPw" type="password" autocomplete="new-password"><button type="button" data-toggle="#upPw" aria-pressed="false">Show</button></div><div class="hint">At least 8 characters.</div></div>
+        <div class="opts"><label class="check"><input type="checkbox" id="upKeep" checked> Keep me signed in</label></div>
+        <p class="msg" id="msgUp" role="alert"></p>
+        <button class="btn primary wide" type="submit">Create account</button>
+      </form>
+
+      <form id="formForgot" novalidate hidden>
+        <button type="button" class="linkbtn back" data-back>← Back to sign in</button>
+        <h2>Reset your password</h2><p class="lead">Enter the email you signed up with and we'll send a 6-digit code.</p>
+        <div class="field"><label for="fgEmail">Email</label><input class="input" id="fgEmail" type="email" autocomplete="email" placeholder="you@example.com"></div>
+        <p class="msg" id="msgForgot" role="alert"></p>
+        <button class="btn primary wide" type="submit">Send reset code</button>
+      </form>
+
+      <form id="formReset" novalidate hidden>
+        <button type="button" class="linkbtn back" data-back>← Back to sign in</button>
+        <h2>Choose a new password</h2><p class="lead" id="resetLead">Enter the code and a new password.</p>
+        <div class="notice" id="demoCode" role="status"></div>
+        <div class="field"><label for="rsCode">6-digit code</label><input class="input" id="rsCode" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="123456"></div>
+        <div class="field"><label for="rsPw">New password</label><div class="pw"><input class="input" id="rsPw" type="password" autocomplete="new-password"><button type="button" data-toggle="#rsPw" aria-pressed="false">Show</button></div><div class="hint">At least 8 characters.</div></div>
+        <p class="msg" id="msgReset" role="alert"></p>
+        <button class="btn primary wide" type="submit">Update password</button>
+      </form>
+
+      <form id="formGoogle" novalidate hidden>
+        <button type="button" class="linkbtn back" data-back>← Back to sign in</button>
+        <h2>Continue with Google</h2><p class="lead">Google sign-in isn't connected to a Google project yet, so this runs in demo mode. Enter your Google email to continue.</p>
+        <div class="field"><label for="ggEmail">Google email</label><input class="input" id="ggEmail" type="email" autocomplete="email" placeholder="you@gmail.com"></div>
+        <p class="msg" id="msgGoogle" role="alert"></p>
+        <button class="btn primary wide" type="submit">Continue</button>
+      </form>
+
+      <div id="alt">
+        <div class="divider">or</div>
+        <div class="alt">
+          <button type="button" class="btn gbtn" id="gBtn"><svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.9 2.4 30.4 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.9-6.1A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.8l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>Continue with Google</button>
+          <button type="button" class="btn" id="guestBtn">Continue as guest</button>
+        </div>
+        <p class="msg" id="msgAlt" role="alert" style="margin:12px 0 0"></p>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="app">
+<aside class="sidebar">
+  <div class="brand"><div class="brandmark"><svg aria-hidden="true"><use href="#if-bolt"/></svg></div><div><strong>IONFORGE</strong><small>Safety Beyond Limits</small></div></div>
+  <nav class="nav">
+    <button class="active" data-section="dashboard"><span class="ico">⌂</span><span>Dashboard</span></button>
+    <button data-section="history"><span class="ico">◷</span><span>Fall History</span></button>
+    <button data-section="devices"><span class="ico">⌁</span><span>Devices</span></button>
+    <button data-section="caregivers"><span class="ico">♙</span><span>Caregivers</span></button>
+    <button data-section="settings"><span class="ico">⚙</span><span>Settings</span></button>
+  </nav>
+  <div class="sidebar-footer"><b>IONFORGE</b><span>Fall Detection & Monitoring</span><br><br>Your loved ones are never alone.</div>
+</aside>
+
+<main class="main">
+<header class="topbar">
+  <div class="top-left">
+    <div class="system"><i class="dot"></i><b>System Online</b></div>
+    <div class="system"><span class="wifi">⌁</span><b>Backend Connected</b></div>
+  </div>
+  <div class="top-right"><div class="bell">♧<span class="badge" id="alertBadge">3</span></div><div class="profile"><div class="avatar" id="avatar">♙</div><div><span id="profName">Caregiver</span><small id="profEmail">caregiver@ionforge.com</small></div><button class="btn" id="signOut">Sign out</button></div></div>
+</header>
+
+<div class="content">
+<!-- DASHBOARD -->
+<section id="dashboard" class="section active">
+  <div class="page-title"><div><h1>Fall Detection Dashboard</h1><p>Real-time monitoring of the IONFORGE safety armband</p></div><div class="actions"><button class="btn" id="simulateOffline">Simulate Offline</button><button class="btn primary" id="simulateFall">Simulate Fall Event</button></div></div>
+  <div class="grid stats">
+    <div class="card stat"><div class="stat-icon green">⌁</div><div><div class="label">Armband Status</div><div class="value status" id="deviceStatus">Online</div><div class="sub" id="lastSeen">Last seen: just now</div></div></div>
+    <div class="card stat"><div class="stat-icon blue">♙</div><div><div class="label">Registered Person</div><div class="value">Rohan Das</div><div class="sub">Age 68 · ID: RD001</div></div></div>
+    <div class="card stat"><div class="stat-icon green">⌖</div><div><div class="label">GPS Status</div><div class="value status" id="gpsStatus">Active</div><div class="sub">Accuracy: 5 meters</div></div></div>
+    <div class="card stat"><div class="stat-icon purple">♙</div><div><div class="label">Caregiver</div><div class="value">Sushmita Das</div><div class="sub">+91 98765 43210</div></div></div>
+  </div>
+
+  <div class="grid two" style="margin-top:14px">
+    <div class="card">
+      <div class="card-head"><h2>⌖ Live Location</h2><button class="btn" id="mapsBtn">Open in Google Maps ↗</button></div>
+      <div class="map" id="map">
+        <div class="road"></div><div class="road two"></div><div class="road three"></div>
+        <div class="map-label" style="left:10%;top:20%">Kalyani</div><div class="map-label" style="right:12%;top:45%">B-2</div><div class="map-label" style="left:33%;bottom:18%">Kalyani University</div>
+        <div class="map-top"><div class="tag">LIVE GPS · <span class="coords" id="coordsTop">22.9876, 88.4352</span></div><div class="tag">Accuracy ±5m</div></div>
+        <div class="map-pop"><b>⚠ Fall Location</b><span id="popCoords">22.9876, 88.4352</span></div>
+        <div class="pin"><div class="pin-core"></div></div>
+        <div class="map-controls"><button onclick="toast('Map zoomed in')">+</button><button onclick="toast('Map zoomed out')">−</button><button onclick="toast('Centered on live location')">◎</button></div>
+      </div>
+    </div>
+    <div class="card recent">
+      <div class="card-head"><h2>Recent Fall Event</h2><a onclick="openModal()">View details</a></div>
+      <div class="card-body">
+        <div class="event-badge"><span style="font-size:20px">⚠</span><strong id="recentTitle">FALL DETECTED</strong><span class="live">LIVE</span></div>
+        <div class="mini-kv">
+          <div class="mini-row"><span>Date & Time</span><b id="eventTime">28 Sep 2026, 03:17 PM</b></div>
+          <div class="mini-row"><span>Location</span><b id="eventCoords">22.9876, 88.4352</b></div>
+          <div class="mini-row"><span>SMS Status</span><b class="tick" id="smsStatus">✓ Sent (03:18 PM)</b></div>
+          <div class="mini-row"><span>WhatsApp Status</span><b class="tick" id="waStatus">✓ Sent (03:19 PM)</b></div>
+          <div class="mini-row"><span>Caregiver Ack</span><b class="pending" id="ackStatus">● Not Acknowledged</b></div>
+        </div>
+        <button class="reminder" id="reminderBtn">➤ Send Caregiver Reminder</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid bottom" style="margin-top:14px">
+    <div class="card">
+      <div class="card-head"><h2>▣ Fall History <span style="color:var(--muted);font-weight:400">(Latest 5)</span></h2><a onclick="switchSection('history')">View All</a></div>
+      <div class="table-wrap"><table class="table"><thead><tr><th>Event</th><th>Date & Time</th><th>Location</th><th>SMS</th><th>WhatsApp</th><th>Ack</th></tr></thead><tbody id="historyBody"></tbody></table></div>
+    </div>
+    <div class="grid rightgrid">
+      <div class="card"><div class="card-head"><h2>☁ Offline Notifications</h2><span class="offline-count" id="offlineCount">2</span></div><div class="card-body">
+        <div class="offline-box"><div class="offline-title"><span>☁</span><b>Offline event queue</b></div><p>Because the armband has <b>no SIM</b>, events detected without Wi-Fi are stored locally and synchronized when the device reconnects.</p><div id="offlineQueue"></div><button class="btn" style="width:100%;margin-top:9px" id="syncBtn">↻ Sync Offline Events</button></div>
+      </div></div>
+      <div class="card"><div class="card-head"><h2>♧ Notification Log</h2><a>View All</a></div><div class="card-body"><div class="log" id="log"></div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- HISTORY -->
+<section id="history" class="section">
+  <div class="page-title"><div><h1>Fall History</h1><p>Complete incident record and notification trail</p></div><button class="btn" id="exportBtn">⇩ Export CSV</button></div>
+  <div class="card"><div class="table-wrap"><table class="table"><thead><tr><th>Event</th><th>Date & Time</th><th>Latitude</th><th>Longitude</th><th>SMS</th><th>WhatsApp</th><th>Acknowledgement</th></tr></thead><tbody id="historyFull"></tbody></table></div></div>
+</section>
+
+<!-- DEVICES -->
+<section id="devices" class="section">
+ <div class="page-title"><div><h1>Devices</h1><p>Armband connectivity and hardware telemetry</p></div><button class="btn primary" id="deviceToggle">Toggle Device</button></div>
+ <div class="device-panel">
+  <div class="card"><div class="card-head"><h2>IONFORGE Armband · IF-ARM-001</h2><span class="pill ok" id="devicePill">ONLINE</span></div><div class="card-body">
+   <div class="device-row"><span>Connection</span><b class="status" id="connectionVal">Wi-Fi → Backend</b></div>
+   <div class="device-row"><span>SIM</span><b>Not Installed</b></div>
+   <div class="device-row"><span>Fall sensor</span><b class="status">Operational</b></div>
+   <div class="device-row"><span>GPS module</span><b class="status">Active</b></div>
+   <div class="device-row"><span>Battery</span><b>87%</b></div>
+   <div class="device-row"><span>Firmware</span><b>v1.4.2</b></div>
+  </div></div>
+  <div class="card"><div class="card-head"><h2>Offline-first behavior</h2></div><div class="card-body">
+   <p style="color:#a5bbcc;font-size:12px;line-height:1.7">The armband does not require a SIM. When Wi-Fi is unavailable, fall events are buffered on the device. Once Wi-Fi returns, the ESP32 sends the queued events to the backend, which then triggers caregiver notifications.</p>
+   <div class="offline-box"><b style="color:var(--amber)">Recommended flow</b><p style="margin-bottom:0">Fall → Local storage → Wi-Fi reconnect → Backend sync → SMS + WhatsApp → Caregiver acknowledgement</p></div>
+  </div></div>
+ </div>
+</section>
+
+<!-- CAREGIVERS -->
+<section id="caregivers" class="section">
+ <div class="page-title"><div><h1>Caregivers</h1><p>Alert recipients and acknowledgement controls</p></div><button class="btn primary" onclick="toast('Caregiver invite flow opened')">＋ Add Caregiver</button></div>
+ <div class="card"><div class="card-head"><h2>Registered Caregiver</h2><span class="pill ok">ACTIVE</span></div><div class="card-body">
+  <div class="device-row"><span>Name</span><b>Sushmita Das</b></div><div class="device-row"><span>Relationship</span><b>Family / Primary Caregiver</b></div><div class="device-row"><span>Phone</span><b>+91 98765 43210</b></div><div class="device-row"><span>SMS alerts</span><b class="status">Enabled</b></div><div class="device-row"><span>WhatsApp alerts</span><b class="status">Enabled</b></div><div class="device-row"><span>Offline-sync alerts</span><b class="status">Enabled</b></div>
+ </div></div>
+</section>
+
+<!-- SETTINGS -->
+<section id="settings" class="section">
+ <div class="page-title"><div><h1>Settings</h1><p>Monitoring and notification configuration</p></div><button class="btn primary" id="saveSettings">Save Changes</button></div>
+ <div class="settings-panel">
+  <div class="card"><div class="card-head"><h2>Alert Configuration</h2></div><div class="card-body">
+   <div class="form-row"><label>Fall detection sensitivity</label><select class="input"><option>High — recommended</option><option>Medium</option><option>Low</option></select></div>
+   <div class="form-row"><label>Notification retry interval</label><select class="input"><option>30 seconds</option><option>60 seconds</option><option>2 minutes</option></select></div>
+   <div class="form-row"><label>GPS accuracy threshold</label><select class="input"><option>±5 meters</option><option>±10 meters</option><option>±20 meters</option></select></div>
+  </div></div>
+  <div class="card"><div class="card-head"><h2>Offline Mode</h2></div><div class="card-body">
+   <div class="device-row"><span>Store events locally</span><b class="status">Enabled</b></div><div class="device-row"><span>Auto-sync on reconnect</span><b class="status">Enabled</b></div><div class="device-row"><span>Notify on delayed sync</span><b class="status">Enabled</b></div>
+   <p style="color:var(--muted);font-size:11px;line-height:1.6">Offline mode is essential because this armband has no SIM. Notification delivery begins only after the backend receives the event.</p>
+  </div></div>
+ </div>
+</section>
+</div>
+</main>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="modal-back" id="modalBack" onclick="if(event.target===this)closeModal()"><div class="modal"><div class="modal-head"><h3>Fall Event Details</h3><button class="close" onclick="closeModal()">×</button></div><div class="modal-body">
+ <div class="detail-grid">
+  <div class="detail-box"><small>Event ID</small><b id="mId">ION-FALL-20260928-001</b></div><div class="detail-box"><small>Status</small><b style="color:var(--red)">FALL DETECTED</b></div>
+  <div class="detail-box"><small>Registered Person</small><b>Rohan Das</b></div><div class="detail-box"><small>Device</small><b>IF-ARM-001</b></div>
+  <div class="detail-box"><small>Date & Time</small><b id="mTime"></b></div><div class="detail-box"><small>GPS Coordinates</small><b id="mCoords"></b></div>
+  <div class="detail-box"><small>SMS</small><b style="color:var(--green)">Delivered</b></div><div class="detail-box"><small>WhatsApp</small><b style="color:var(--green)">Delivered</b></div>
+  <div class="detail-box"><small>Caregiver</small><b>Sushmita Das</b></div><div class="detail-box"><small>Acknowledgement</small><b id="mAck" style="color:var(--red)">Not Acknowledged</b></div>
+ </div>
+ <div style="display:flex;gap:8px;margin-top:16px"><button class="btn primary" onclick="acknowledge()">✓ Mark Acknowledged</button><button class="btn" onclick="sendReminder()">➤ Send Reminder</button></div>
+</div></div></div>
+
+<script>
+const $=s=>document.querySelector(s);
+let deviceOnline=true;
+let acknowledged=false;
+let currentCoords={lat:22.9876,lng:88.4352};
+let history=[
+ {id:"ION-FALL-20260928-001",date:"28 Sep 2026, 03:17 PM",lat:"22.9876",lng:"88.4352",sms:"Sent",wa:"Sent",ack:"No",red:true},
+ {id:"ION-FALL-20260926-002",date:"26 Sep 2026, 08:15 AM",lat:"22.9781",lng:"88.4210",sms:"Sent",wa:"Sent",ack:"Yes"},
+ {id:"ION-FALL-20260924-003",date:"24 Sep 2026, 06:32 PM",lat:"22.9654",lng:"88.4167",sms:"Sent",wa:"Sent",ack:"Yes"},
+ {id:"ION-FALL-20260922-004",date:"22 Sep 2026, 11:17 AM",lat:"22.9723",lng:"88.4301",sms:"Sent",wa:"Sent",ack:"Yes"},
+ {id:"ION-FALL-20260920-005",date:"20 Sep 2026, 07:46 PM",lat:"22.9612",lng:"88.4025",sms:"Sent",wa:"Sent",ack:"No",red:true}
+];
+let offline=[
+ {date:"28 Sep 2026, 01:05 PM",status:"Waiting for sync"},
+ {date:"27 Sep 2026, 08:15 PM",status:"Waiting for sync"}
+];
+let logs=[
+ ["green","WhatsApp message sent to caregiver","28 Sep 2026, 03:19 PM"],
+ ["blue","SMS sent to caregiver","28 Sep 2026, 03:18 PM"],
+ ["red","Fall event detected by armband","28 Sep 2026, 03:17 PM"],
+ ["green","Armband connected to Wi-Fi","28 Sep 2026, 03:16 PM"],
+ ["amber","Previous offline event queued","28 Sep 2026, 01:05 PM"]
+];
+
+function nowText(){return new Date().toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit",hour12:true})}
+function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");clearTimeout(window.__toast);window.__toast=setTimeout(()=>t.classList.remove("show"),2500)}
+function switchSection(id){document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));$("#"+id).classList.add("active");document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("active",b.dataset.section===id));window.scrollTo({top:0,behavior:"smooth"})}
+document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>switchSection(b.dataset.section));
+
+function renderHistory(){
+ const rows=history.map(x=>`<tr onclick="openModal('${x.id}')" style="cursor:pointer"><td><span class="event-dot ${x.red?'red':''}"></span>Fall</td><td>${x.date}</td><td>${x.lat}, ${x.lng}</td><td><span class="pill ok">✓ ${x.sms}</span></td><td><span class="pill ok">✓ ${x.wa}</span></td><td><span class="pill ${x.ack==='Yes'?'ok':'no'}">${x.ack==='Yes'?'✓ Yes':'● No'}</span></td></tr>`).join("");
+ $("#historyBody").innerHTML=rows.slice(0,5);
+ $("#historyFull").innerHTML=history.map(x=>`<tr><td><span class="event-dot ${x.red?'red':''}"></span>${x.id}</td><td>${x.date}</td><td>${x.lat}</td><td>${x.lng}</td><td><span class="pill ok">✓ ${x.sms}</span></td><td><span class="pill ok">✓ ${x.wa}</span></td><td><span class="pill ${x.ack==='Yes'?'ok':'no'}">${x.ack==='Yes'?'✓ Acknowledged':'● Not Acknowledged'}</span></td></tr>`).join("");
+}
+function renderOffline(){
+ $("#offlineCount").textContent=offline.length;
+ $("#offlineQueue").innerHTML=offline.length?offline.slice(0,3).map(x=>`<div class="queue-item"><span><i class="qdot"></i>Fall Event (Offline)</span><span style="color:var(--muted)">${x.date}</span></div>`).join(""):`<div style="color:var(--green);font-size:11px;padding:8px 0">✓ No pending offline events</div>`;
+}
+function renderLogs(){
+ $("#log").innerHTML=logs.slice(0,5).map(x=>`<div class="log-item"><div class="log-icon ${x[0]==='red'?'red':x[0]==='green'?'green':''}">${x[0]==='red'?'⚠':x[0]==='green'?'✓':'●'}</div><div><b>${x[1]}</b><small>${x[2]}</small></div></div>`).join("");
+}
+function updateDevice(){
+ $("#deviceStatus").textContent=deviceOnline?"Online":"Offline";
+ $("#deviceStatus").className="value "+(deviceOnline?"status":"offline");
+ $("#lastSeen").textContent=deviceOnline?"Last seen: just now":"Last seen: connection lost";
+ $("#gpsStatus").textContent=deviceOnline?"Active":"Unavailable";
+ $("#gpsStatus").className="value "+(deviceOnline?"status":"offline");
+ $("#devicePill").textContent=deviceOnline?"ONLINE":"OFFLINE";
+ $("#devicePill").className="pill "+(deviceOnline?"ok":"no");
+ $("#connectionVal").textContent=deviceOnline?"Wi-Fi → Backend":"Local storage / waiting for Wi-Fi";
+ $("#connectionVal").className=deviceOnline?"status":"offline";
+}
+function addLog(type,msg){logs.unshift([type,msg,nowText()]);renderLogs()}
+function simulateFall(){
+ currentCoords={lat:(22.96+Math.random()*.04).toFixed(4),lng:(88.40+Math.random()*.04).toFixed(4)};
+ acknowledged=false;
+ const time=nowText();
+ const item={id:"ION-FALL-"+Date.now(),date:time,lat:String(currentCoords.lat),lng:String(currentCoords.lng),sms:"Sent",wa:"Sent",ack:"No",red:true};
+ history.unshift(item);
+ $("#eventTime").textContent=time;$("#eventCoords").textContent=`${currentCoords.lat}, ${currentCoords.lng}`;
+ $("#coordsTop").textContent=`${currentCoords.lat}, ${currentCoords.lng}`;$("#popCoords").textContent=`${currentCoords.lat}, ${currentCoords.lng}`;
+ $("#smsStatus").textContent="✓ Sent (now)";$("#waStatus").textContent="✓ Sent (now)";$("#ackStatus").textContent="● Not Acknowledged";
+ addLog("red","Fall event detected by ESP32 armband");addLog("blue","SMS sent to caregiver");addLog("green","WhatsApp message sent to caregiver");
+ $("#alertBadge").textContent=Number($("#alertBadge").textContent||0)+1;
+ renderHistory(); toast("🚨 Fall detected — caregiver alerts sent");
+}
+function simulateOffline(){
+ deviceOnline=false;updateDevice();
+ offline.unshift({date:nowText(),status:"Waiting for sync"});
+ addLog("amber","Armband went offline — event queue enabled");renderOffline();toast("☁ Armband offline — offline notification mode enabled");
+}
+function syncOffline(){
+ if(deviceOnline){
+   if(!offline.length){toast("No offline events waiting for sync");return}
+   const n=offline.length;offline=[];renderOffline();addLog("green",`${n} offline event${n>1?'s':''} synchronized to backend`);toast(`✓ ${n} offline event${n>1?'s':''} synchronized`);
+ }else toast("Reconnect the armband to Wi-Fi before syncing");
+}
+function acknowledge(){
+ acknowledged=true;$("#ackStatus").textContent="✓ Acknowledged";$("#ackStatus").className="tick";$("#mAck").textContent="Acknowledged";$("#mAck").style.color="var(--green)";
+ if(history[0])history[0].ack="Yes";renderHistory();addLog("green","Caregiver acknowledged latest fall");toast("✓ Caregiver acknowledgement recorded");closeModal();
+}
+function sendReminder(){addLog("blue","Caregiver reminder sent");toast("➤ Reminder sent via SMS + WhatsApp")}
+function openModal(id){
+ if(id){const h=history.find(x=>x.id===id);if(h){$("#mId").textContent=h.id;$("#mTime").textContent=h.date;$("#mCoords").textContent=h.lat+", "+h.lng;$("#mAck").textContent=h.ack==="Yes"?"Acknowledged":"Not Acknowledged";$("#mAck").style.color=h.ack==="Yes"?"var(--green)":"var(--red)"}}
+ else{$("#mTime").textContent=$("#eventTime").textContent;$("#mCoords").textContent=$("#eventCoords").textContent}
+ $("#modalBack").classList.add("show");
+}
+function closeModal(){$("#modalBack").classList.remove("show")}
+$("#simulateFall").onclick=simulateFall;$("#simulateOffline").onclick=simulateOffline;$("#syncBtn").onclick=syncOffline;$("#deviceToggle").onclick=()=>{deviceOnline=!deviceOnline;updateDevice();toast(deviceOnline?"✓ Armband reconnected":"☁ Armband disconnected")};
+$("#reminderBtn").onclick=sendReminder;$("#mapsBtn").onclick=()=>window.open(`https://www.google.com/maps?q=${currentCoords.lat},${currentCoords.lng}`,"_blank");
+$("#saveSettings").onclick=()=>toast("✓ Settings saved successfully");
+$("#exportBtn").onclick=()=>{
+ let csv="Event ID,Date & Time,Latitude,Longitude,SMS,WhatsApp,Acknowledgement\n"+history.map(x=>[x.id,x.date,x.lat,x.lng,x.sms,x.wa,x.ack].map(v=>`"${v}"`).join(",")).join("\n");
+ const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="ionforge-fall-history.csv";a.click();URL.revokeObjectURL(a.href);toast("✓ Fall history exported");
+};
+renderHistory();renderOffline();renderLogs();updateDevice();
+setInterval(()=>{if(deviceOnline)$("#lastSeen").textContent="Last seen: just now"},10000);
+</script>
+<script>
+/* ===== AUTH (client-side demo: accounts live in this browser only) ===== */
+(function(){
+  // Paste a Google OAuth "Web application" client ID here to enable real Google sign-in.
+  // Leave empty to use the demo chooser.
+  const GOOGLE_CLIENT_ID="";
+
+  const K_USERS="ionforge.users",K_SESS="ionforge.session";
+  const $a=s=>document.querySelector(s);
+  const mem={};
+  const store=kind=>({
+    get(k){try{return window[kind].getItem(k)}catch(e){return mem[kind+k]??null}},
+    set(k,v){try{window[kind].setItem(k,v)}catch(e){mem[kind+k]=v}},
+    del(k){try{window[kind].removeItem(k)}catch(e){delete mem[kind+k]}}
+  });
+  const ls=store("localStorage"),ss=store("sessionStorage");
+
+  const getUsers=()=>{try{return JSON.parse(ls.get(K_USERS)||"[]")}catch(e){return[]}};
+  const saveUsers=u=>ls.set(K_USERS,JSON.stringify(u));
+  const validEmail=e=>/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e);
+  const val=id=>$a(id).value.trim();
+  const newSalt=()=>Math.random().toString(36).slice(2)+Date.now().toString(36);
+  async function hash(pw,salt){
+    try{
+      const buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(salt+pw));
+      return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
+    }catch(e){let h=5381;for(const c of salt+pw)h=((h<<5)+h)^c.charCodeAt(0);return "x"+(h>>>0).toString(16)}
+  }
+
+  const views=["In","Up","Forgot","Reset","Google"];
+  function clearMsgs(){document.querySelectorAll("#auth .msg").forEach(m=>{m.textContent="";m.classList.remove("ok")})}
+  function show(v){
+    views.forEach(n=>{$a("#form"+n).hidden=n!==v});
+    const tabbed=v==="In"||v==="Up";
+    $a("#tabs").hidden=!tabbed;$a("#alt").hidden=!tabbed;
+    $a("#tabIn").setAttribute("aria-selected",v==="In");
+    $a("#tabUp").setAttribute("aria-selected",v==="Up");
+    clearMsgs();
+    const f=$a("#form"+v+" input:not([type=checkbox])");if(f)f.focus();
+  }
+  function msg(id,text,ok){const m=$a(id);m.textContent=text;m.classList.toggle("ok",!!ok)}
+
+  function enter(u,silent){
+    document.documentElement.classList.add("authed");
+    $a("#profName").textContent=u.name;
+    $a("#profEmail").textContent=u.email;
+    $a("#avatar").textContent=(u.name||"?").trim().charAt(0).toUpperCase()||"♙";
+    window.scrollTo(0,0);
+    if(!silent)toast(u.provider==="guest"?"Signed in as guest":"Signed in as "+u.name);
+  }
+  function start(u,keep){
+    ls.del(K_SESS);ss.del(K_SESS);
+    (keep?ls:ss).set(K_SESS,JSON.stringify(u));
+    enter(u);
+  }
+  function signOut(){
+    ls.del(K_SESS);ss.del(K_SESS);
+    document.documentElement.classList.remove("authed");
+    document.querySelectorAll("#auth form").forEach(f=>f.reset());
+    show("In");toast("Signed out");
+  }
+  const keepVal=()=>($a("#formUp").hidden?$a("#inKeep"):$a("#upKeep")).checked;
+
+  /* tabs & links */
+  $a("#tabIn").onclick=()=>show("In");
+  $a("#tabUp").onclick=()=>show("Up");
+  $a("#toForgot").onclick=()=>{show("Forgot");$a("#fgEmail").value=$a("#inEmail").value};
+  document.querySelectorAll("[data-back]").forEach(b=>b.onclick=()=>show("In"));
+  document.querySelectorAll("[data-toggle]").forEach(b=>b.onclick=()=>{
+    const i=$a(b.dataset.toggle),show_=i.type==="password";
+    i.type=show_?"text":"password";b.textContent=show_?"Hide":"Show";b.setAttribute("aria-pressed",show_);
+  });
+  $a("#signOut").onclick=signOut;
+
+  /* sign in */
+  $a("#formIn").addEventListener("submit",async e=>{
+    e.preventDefault();clearMsgs();
+    const email=val("#inEmail").toLowerCase(),pw=$a("#inPw").value;
+    if(!validEmail(email))return msg("#msgIn","Enter a valid email address.");
+    if(!pw)return msg("#msgIn","Enter your password.");
+    const u=getUsers().find(x=>x.email===email);
+    if(!u||u.hash!==await hash(pw,u.salt))return msg("#msgIn","Email or password is incorrect. Check both, or reset your password.");
+    start({name:u.name,email:u.email,provider:"password"},$a("#inKeep").checked);
+  });
+
+  /* sign up */
+  $a("#formUp").addEventListener("submit",async e=>{
+    e.preventDefault();clearMsgs();
+    const name=val("#upName"),email=val("#upEmail").toLowerCase(),pw=$a("#upPw").value;
+    if(name.length<2)return msg("#msgUp","Enter your full name.");
+    if(!validEmail(email))return msg("#msgUp","Enter a valid email address.");
+    if(pw.length<8)return msg("#msgUp","Use at least 8 characters for your password.");
+    const users=getUsers();
+    if(users.some(x=>x.email===email))return msg("#msgUp","An account with this email already exists. Sign in instead.");
+    const salt=newSalt();
+    users.push({name,email,salt,hash:await hash(pw,salt)});saveUsers(users);
+    start({name,email,provider:"password"},$a("#upKeep").checked);
+  });
+
+  /* forgot / reset password (demo: the code is shown on screen because no email service is connected) */
+  let pending=null;
+  $a("#formForgot").addEventListener("submit",e=>{
+    e.preventDefault();clearMsgs();
+    const email=val("#fgEmail").toLowerCase();
+    if(!validEmail(email))return msg("#msgForgot","Enter a valid email address.");
+    if(!getUsers().some(x=>x.email===email))return msg("#msgForgot","No account uses this email. Check the spelling or sign up.");
+    const code=String(100000+Math.floor(Math.random()*900000));
+    pending={email,code,exp:Date.now()+10*60*1000};
+    show("Reset");
+    $a("#resetLead").textContent="Enter the 6-digit code for "+email+" and choose a new password.";
+    $a("#demoCode").innerHTML="Demo mode: no email is sent. Your code is <b>"+code+"</b>.";
+  });
+  $a("#formReset").addEventListener("submit",async e=>{
+    e.preventDefault();clearMsgs();
+    const code=val("#rsCode"),pw=$a("#rsPw").value;
+    if(!pending)return show("Forgot");
+    if(Date.now()>pending.exp){pending=null;show("Forgot");return msg("#msgForgot","That code expired. Request a new one.")}
+    if(code!==pending.code)return msg("#msgReset","That code doesn't match. Check the 6 digits and try again.");
+    if(pw.length<8)return msg("#msgReset","Use at least 8 characters for your password.");
+    const users=getUsers(),u=users.find(x=>x.email===pending.email);
+    if(u){u.salt=newSalt();u.hash=await hash(pw,u.salt);saveUsers(users)}
+    const email=pending.email;pending=null;
+    show("In");$a("#inEmail").value=email;$a("#inPw").focus();
+    msg("#msgIn","Password updated. Sign in with your new password.",true);
+  });
+
+  /* guest */
+  $a("#guestBtn").onclick=()=>start({name:"Guest",email:"Guest session",provider:"guest"},false);
+
+  /* google */
+  function loadGis(){return new Promise((res,rej)=>{
+    if(window.google&&google.accounts&&google.accounts.oauth2)return res();
+    const s=document.createElement("script");s.src="https://accounts.google.com/gsi/client";s.onload=res;s.onerror=rej;document.head.appendChild(s);
+  })}
+  $a("#gBtn").onclick=async()=>{
+    clearMsgs();
+    if(!GOOGLE_CLIENT_ID)return show("Google");
+    try{
+      await loadGis();
+      const keep=keepVal();
+      google.accounts.oauth2.initTokenClient({
+        client_id:GOOGLE_CLIENT_ID,scope:"openid email profile",
+        callback:async r=>{
+          if(r.error)return msg("#msgAlt","Google sign-in was cancelled or failed. Try again.");
+          try{
+            const p=await(await fetch("https://www.googleapis.com/oauth2/v3/userinfo",{headers:{Authorization:"Bearer "+r.access_token}})).json();
+            start({name:p.name||p.email,email:p.email,provider:"google"},keep);
+          }catch(err){msg("#msgAlt","Couldn't read your Google profile. Try again.")}
+        }
+      }).requestAccessToken();
+    }catch(err){msg("#msgAlt","Couldn't reach Google. Check your connection and try again.")}
+  };
+  $a("#formGoogle").addEventListener("submit",e=>{
+    e.preventDefault();clearMsgs();
+    const email=val("#ggEmail").toLowerCase();
+    if(!validEmail(email))return msg("#msgGoogle","Enter a valid Google email address.");
+    const local=email.split("@")[0].replace(/[._-]+/g," ");
+    const name=local.replace(/\b\w/g,c=>c.toUpperCase());
+    start({name,email,provider:"google"},keepVal());
+  });
+
+  /* restore existing session */
+  try{
+    const raw=ls.get(K_SESS)||ss.get(K_SESS);
+    if(raw)enter(JSON.parse(raw),true);
+  }catch(e){}
+})();
+</script>
+</body>
+</html>
