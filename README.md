@@ -201,6 +201,9 @@ VERCEL LINK
 
 --> https://ionforgefalldetectiondashboard-3-8fw21zw7w-ionforge.vercel.app?_vercel_share=FqJLpHWjHwboFaokRq7TQxjNWsYtpkBF
 
+wowki file
+https://wokwi.com/projects/476417757261119489
+
 ---
 
 ## ▶️ Running the Backend
